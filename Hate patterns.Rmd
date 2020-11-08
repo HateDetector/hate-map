@@ -1,0 +1,110 @@
+---
+title: "Hate tweets"
+output: 
+  html_document:
+    css: data/style.css
+
+---
+
+<img src="data/hatedetectorv2_small.jpg" style="position:absolute;top:18px;right:18px;" />
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(tidyverse)
+library(sf)
+library(lubridate)
+library(USAboundaries) # for state abbreviations
+library(plotly)
+
+source("prep_data.R")
+
+```
+
+<style type="text/css">
+.main-container {
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+## {.tabset}
+
+### Timeline
+
+```{r warning=FALSE, out.width="80%", fig.heigt  = 8}
+
+plot_ly(x = ~hate_per_day$created_date,
+        y = ~hate_per_day$perc_hate, 
+        mode = 'lines+markers', 
+        type = 'scatter',
+        line = list(color = '#ad353f',
+                    width = 4),
+        marker = list(color = '#ad353f',
+                      size = 8),
+        text = paste0(hate_per_day$created_day, ' ', 
+                     day(hate_per_day$created_date), ' ',
+                     month(hate_per_day$created_date, label = TRUE),
+                     '<br>',
+                     hate_per_day$perc_hate, '% hate',
+                     '<br>',
+                     hate_per_day$no_hate, ' hate tweets',
+                     '<br>',
+                     hate_per_day$no_tweets, ' total tweets'),
+        hoverinfo = "text"
+        ) %>%
+  layout(paper_bgcolor = 'black',
+         plot_bgcolor = 'black',
+         font = list(color = "white",
+                     size = 12),
+         xaxis = list(title = '',
+                      tickformat = '%d %b',
+                      linecolor = ''),
+         yaxis = list (title = '% of tweets classed as hate',
+                       linecolor = '')
+         )
+
+```
+
+### Map
+
+```{r warning=FALSE, out.width="100%", fig.heigt  = 8}
+
+scale_min <- min(states$perc_hate)
+scale_max <- max(states$perc_hate)
+
+plot_ly(type = "choropleth", 
+        locations = states$state_abbr, 
+        text = paste0(states$name,
+                     '<br>',
+                     states$perc_hate,
+                     '% hate'),
+        hoverinfo = "text",
+        locationmode = "USA-states", 
+        color = "White",
+        colors = "Reds",
+        z = states$perc_hate,
+        
+        # Set min and max for colour scale so same for each day
+        zmin = scale_min,
+        zmax = scale_max,
+        frame = as.character(states$created_date),
+        alpha = 1,
+        colorbar = list(title = "% of tweets <br>classsed as hate ",
+                        len = 0.75)) %>%
+  layout(geo = list(scope = "usa",
+                    bgcolor = "black"),
+         paper_bgcolor = 'black',
+         plot_bgcolor = 'black',
+         font = list(color = "white",
+                     size = 10)) %>%
+  animation_slider(font = list(color="white"),
+                   tickcolor = "white",
+                   len = 0.8) %>%
+  animation_button(font = list(color = "white")) 
+  
+```
+
+
+
